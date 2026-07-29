@@ -110,7 +110,16 @@ type listAccountsRequest struct {
 }
 
 func (server *Server) listAccounts(c *gin.Context) {
-	accounts, err := server.store.ListAccounts(c.Request.Context())
+	var req listAccountsRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	accounts, err := server.store.ListAccounts(c.Request.Context(), db.ListAccountsParams{
+		Limit:  req.PageSize,
+		Offset: (req.PageID - 1) * req.PageSize,
+	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
