@@ -46,6 +46,7 @@ func main() {
 	// 4. Khai báo các Routes API
 	router.POST("/accounts", server.createAccount)
 	router.GET("/accounts/:id", server.getAccount)
+	router.GET("/accounts", server.listAccounts)
 
 	// 5. Chạy Server ở port 8080
 	log.Println("Server đang chạy tại http://localhost:8080")
@@ -101,6 +102,20 @@ func (server *Server) getAccount(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, account)
+}
+
+type listAccountsRequest struct {
+	PageID   int32 `form:"page_id" binding:"required,min=1"`
+	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`
+}
+
+func (server *Server) listAccounts(c *gin.Context) {
+	accounts, err := server.store.ListAccounts(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, accounts)
 }
 
 type deleteAccount struct {
