@@ -1,4 +1,5 @@
 name: ci-test
+
 on:
   push:
     branches:
@@ -6,19 +7,21 @@ on:
   pull_request:
     branches:
       - main
-jobs:
 
-build:
+jobs:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Go 1.x
-        uses: actions/setup-go@v4
+     
+      - name: Check out code
+        uses: actions/checkout@v4
+
+     
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.26.5
-id: go
+          go-version: '1.26.5'
 
--name: Check out code
-        uses: actions/checkout@v3
-
+      #  Chạy test
       - name: Test
         run: make test
