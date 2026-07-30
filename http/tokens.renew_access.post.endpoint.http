@@ -1,0 +1,5 @@
+POST http://localhost:8080/tokens/renew_access
+Content-Type: application/json
+{
+    "refresh_token": "your.sss.here"
+}

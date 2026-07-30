@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"github.com/google/uuid"
 	"net/http"
 	"time"
 
@@ -80,8 +81,12 @@ type loginUserRequest struct {
 }
 
 type loginUserResponse struct {
-	AccessToken string       `json:"access_token"`
-	User        userResponse `json:"user"`
+	SessionID             uuid.UUID    `json:"session_id"`
+	AccessToken           string       `json:"access_token"`
+	User                  userResponse `json:"user"`
+	AccessTokenExpiresAt  time.Time    `json:"access_token_expires_at"`
+	RefreshToken          string       `json:"refresh_token"`
+	RefreshTokenExpiresAt time.Time    `json:"refresh_token_expires_at"`
 }
 
 func (server *Server) loginUser(ctx *gin.Context) {
@@ -107,7 +112,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
-	accessToken, err := server.tokenMaker.CreateToken(
+	accessToken, accessPayload, err := server.tokenMaker.CreateToken(
 		user.Username,
 		int64(server.config.AccessTokenDuration),
 	)
@@ -116,9 +121,35 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
+	refreshToken, refreshPayload, err := server.tokenMaker.CreateToken(
+		user.Username,
+		int64(server.config.RefreshTokenDuration),
+	)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	session, err := server.store.CreateSession(ctx, db.CreateSessionParams{
+		ID:           refreshPayload.ID,
+		Username:     user.Username,
+		RefreshToken: refreshToken,
+		UserAgent:    "",
+		ClientIp:     "",
+		IsBlocked:    false,
+		ExpiresAt:    refreshPayload.ExpiredAt,
+	})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
 	rsp := loginUserResponse{
-		AccessToken: accessToken,
-		User:        newUserResponse(user),
+		AccessToken:           accessToken,
+		User:                  newUserResponse(user),
+		AccessTokenExpiresAt:  accessPayload.ExpiredAt,
+		RefreshToken:          refreshToken,
+		RefreshTokenExpiresAt: refreshPayload.ExpiredAt,
+		SessionID:             session.ID,
 	}
 
 	ctx.JSON(http.StatusOK, rsp)
