@@ -4,6 +4,7 @@ package db
 import (
 	"context"
 	"log"
+	"my-gin-app/util"
 	"os"
 	"testing"
 
@@ -13,16 +14,17 @@ import (
 var testQueries *Queries
 var testDB *pgxpool.Pool
 
-const (
-	dbSource = "postgres://postgres:mysecretpassword@localhost:5432/simple_bank?sslmode=disable"
-)
-
 func TestMain(m *testing.M) {
 	var err error
 	ctx := context.Background()
 
+	config, err := util.LoadConfig("../../")
+	if err != nil {
+		log.Fatal("Không thể tải cấu hình:", err)
+	}
+
 	// Khởi tạo connection pool cho DB test
-	testDB, err = pgxpool.New(ctx, dbSource)
+	testDB, err = pgxpool.New(ctx, config.DBSource)
 	if err != nil {
 		log.Fatal("Không thể kết nối DB test:", err)
 	}

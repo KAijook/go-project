@@ -2,7 +2,7 @@ POST http://localhost:8080/accounts
 Content-Type: application/json
 
 {
-  "owner": "John Doe",
+  "owner": "user1",
   "balance": 1000,
-  "currency": "USD"
+  "currency": "EUR"
 }
